@@ -1,6 +1,8 @@
 #include "render.h"
 #include <iostream>
 #include "board.h"
+#include "input.h"
+#include "debug.h"
 
 std::array<sf::Sprite, 12> initTextures()
 {
@@ -33,7 +35,6 @@ std::array<sf::Sprite, 12> initTextures()
 void draw(sf::RenderWindow& window, std::array<sf::Sprite, 12> sprites)
 {
     drawCheckboard(window);
-    Board board = Board::getInstance();
     for(int j = 0; j < 12; j++)
     {
         sprites[j].setScale(pieceSize.x / 60, pieceSize.y / 60);
@@ -74,6 +75,23 @@ void drawCheckboard(sf::RenderWindow& window)
         {
             sf::RectangleShape square(sf::Vector2f(canvasSize.x / 8, canvasSize.y / 8));
             square.setPosition(sf::Vector2f(canvasSize.x * x / 8, canvasSize.y * y / 8));
+
+            if((board.generatedMoves >> (7 - x + (7 - y) * 8) & 1))
+            {
+                square.setFillColor(sf::Color(240, 128, 128));
+                color = !color;
+                window.draw(square);
+                continue;
+            }
+
+            if(y * 8 + x == highlitedTile && board.selectedTile)
+            {
+                square.setFillColor(sf::Color(135, 201, 249));
+                color = !color;
+                window.draw(square);
+                continue;
+            }
+
             if(color)
             {
                 square.setFillColor(sf::Color(195, 211, 149));
