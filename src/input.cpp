@@ -8,6 +8,9 @@ void ProcessInput(int xTile, int yTile)
 {
     std::cout << "Processing input : " << xTile << " " << yTile << "\n";
 
+    if(checkmate || resultDraw)
+        return;
+
     // tile that was clicked in this event
     uint64_t clickedTile = (static_cast<uint64_t>(1) << (7 - xTile + (7 - yTile) * 8));
 
@@ -23,6 +26,36 @@ void ProcessInput(int xTile, int yTile)
     int enemyMax = board.whiteToMove ? max - 6 : max + 6;
 
     // TODO: refactor this
+    std::cout << promotionPos.x << "x\n";
+    std::cout << promotionPos.y << "y\n";
+    if(displayPromotion)
+    {
+        int offset = whitePromoting ? 1 : -1;
+        uint64_t newX = static_cast<uint64_t>(promotionPos.x);
+        uint64_t newY = static_cast<uint64_t>(promotionPos.y);
+        if(xTile == promotionPos.x && yTile == promotionPos.y + 1 * offset) // bishop
+        {
+            board.bitboards[enemyMax - 1] |= (static_cast<uint64_t>(1) << (7 - newX + (7 - newY) * 8));
+        }
+        else if(xTile == promotionPos.x && yTile == promotionPos.y + 2 * offset) // knight
+        {
+            board.bitboards[enemyMax - 2] |= (static_cast<uint64_t>(1) << (7 - newX + (7 - newY) * 8));
+        }
+        else if(xTile == promotionPos.x && yTile == promotionPos.y + 3 * offset) // rook
+        {
+            board.bitboards[enemyMax - 3] |= (static_cast<uint64_t>(1) << (7 - newX + (7 - newY) * 8));
+        }
+        else if(xTile == promotionPos.x && yTile == promotionPos.y + 4 * offset) // queen
+        {
+            board.bitboards[enemyMax - 5] |= (static_cast<uint64_t>(1) << (7 - newX + (7 - newY) * 8));
+        }
+        else
+        {
+            return;
+        }
+        board.bitboards[enemyMax] &= ~(static_cast<uint64_t>(1) << (7 - newX + (7 - newY) * 8));
+        displayPromotion = false;
+    }
 
     if(board.selectedTile) // if some piece/tile is already selected
     {
@@ -88,14 +121,14 @@ void ProcessInput(int xTile, int yTile)
             board.selectedTileY = yTile;
             highlitedTile = (xTile + yTile * 8);
             board.generatedMoves = board.generateMoves(board.selectedTile, board.selectedPiece, board.selectedTileX, board.selectedTileY);
-            board.legalMoves = board.getLegalMoves(board.whiteToMove);
+            board.legalMoves = board.getLegalMoves(board.whiteToMove, board.selectedTile, board.selectedPiece);
             board.generatedMoves &= board.legalMoves;
             return;
         }
         else
         {
             board.generatedMoves = board.generateMoves(board.selectedTile, board.selectedPiece, board.selectedTileX, board.selectedTileY);
-            board.legalMoves = board.getLegalMoves(board.whiteToMove);
+            board.legalMoves = board.getLegalMoves(board.whiteToMove, board.selectedTile, board.selectedPiece);
             board.generatedMoves &= board.legalMoves;
 
             std::cout << "Legal moves\n";
@@ -107,19 +140,6 @@ void ProcessInput(int xTile, int yTile)
                 board.halfmove++;
 
                 // en passant //
-                if(board.selectedTile & board.RANK_2 && clickedTile & board.RANK_4)
-                {
-                    std::cout << "White pawn has moved two tiles\n";
-                    board.enPassantTarget = clickedTile >> 8;
-                }
-                else if(board.selectedTile & board.RANK_7 && clickedTile & board.RANK_5)
-                {
-                    std::cout << "Black pawn has moved two tiles\n";
-                    board.enPassantTarget = clickedTile << 8;
-                }
-
-                //PrintBoard(board.enPassantTarget);
-
                 if(clickedTile & board.enPassantTarget)
                 {
                     if(board.selectedPiece == 5)
@@ -132,6 +152,18 @@ void ProcessInput(int xTile, int yTile)
                         board.bitboards[5] &= ~(clickedTile >> 8);
                         board.halfmove = 0;
                     }
+                }
+
+                board.enPassantTarget = 0;
+                if(board.selectedTile & board.RANK_2 && clickedTile & board.RANK_4)
+                {
+                    std::cout << "White pawn has moved two tiles\n";
+                    board.enPassantTarget = clickedTile >> 8;
+                }
+                else if(board.selectedTile & board.RANK_7 && clickedTile & board.RANK_5)
+                {
+                    std::cout << "Black pawn has moved two tiles\n";
+                    board.enPassantTarget = clickedTile << 8;
                 }
 
 
@@ -178,6 +210,18 @@ void ProcessInput(int xTile, int yTile)
                     board.bitboards[max - 3] |= board.selectedTile << 1;
                     board.bitboards[max - 3] &= ~(board.selectedTile << 4);
                 }
+
+                // Pawn promotion //
+                if(board.selectedPiece == max && ((clickedTile & board.RANK_1 && !board.whiteToMove) | (clickedTile & board.RANK_8 && board.whiteToMove)))
+                {
+                    std::cout << "Pawn " << board.whiteToMove << " is promoting\n";
+                    displayPromotion = true;
+                    promotionPos.x = xTile;
+                    promotionPos.y = yTile;
+                    whitePromoting = board.whiteToMove;
+                }
+
+
                 
                 board.bitboards[board.selectedPiece] = clickedTile | oldBitmap;
                 board.selectedPiece = 12;
@@ -196,11 +240,25 @@ void ProcessInput(int xTile, int yTile)
                 std::cout << board.castleKingB << " " << board.castleQueenB << "\n";
 
                 // check for mate //
-                if(!board.getAllLegalMoves(board.whiteToMove))
+                uint64_t allLegalMoves = board.getAllLegalMoves(board.whiteToMove);
+                std::cout << "All legal moves\n";
+                PrintBoard(allLegalMoves);
+
+                if(board.halfmove >= 50)
                 {
-                    std::cout << "CHECKMATE\n";
-                    std::cout << color << " LOST!\n";
+                    resultDraw = true;
                 }
+
+                if(!allLegalMoves)
+                {
+                    winner = board.whiteToMove ? "black" : "white";
+                    checkmate = true;
+                    std::cout << "#########\n";
+                    std::cout << "CHECKMATE\n";
+                    std::cout << winner << " WON!\n";
+                    std::cout << "#########\n";
+                }
+
             }
         }
     }

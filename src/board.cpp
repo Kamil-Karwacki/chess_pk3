@@ -9,7 +9,8 @@
 
 Board::Board()
 {
-    loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 48 1");
+    //loadFEN("4kb1r/p4ppp/4q3/8/8/1B6/PPP2PPP/2KR4");
     GenerateKingMoves();
     GenerateKnightMoves();
 }
@@ -109,15 +110,17 @@ void Board::loadFEN(std::string FEN)
 
         if(numOfSpaces == 4 && isdigit(FEN[i]))
         {
-            halfmove = FEN[i] - '0';
+            halfmoveText += FEN[i];
         }
 
         if(numOfSpaces == 5 && isdigit(FEN[i]))
         {
-            fullmove = FEN[i] - '0';
+            fullmoveText += FEN[i];
         }
     }
 
+    halfmove = std::stoi(halfmoveText);
+    fullmove = std::stoi(fullmoveText);
     std::cout << "halfmove: " << halfmove << "\n";
     std::cout << "fullmove: " << fullmove << "\n";
     std::cout << castleKingW << " " << castleQueenW << "\n";
@@ -199,9 +202,16 @@ uint64_t Board::GeneratePawnMoves(bool white, uint64_t selectedTile)
         nextTile |= nextTile >> 8;
     }
 
-    generatedMoves |= (leftUp | rightUp) & enPassantTarget;
+    //generatedMoves |= (leftUp | rightUp) & enPassantTarget;
 
-    generatedMoves |= (leftUp & getColorPieces(!white) & ~FILE_H) | (rightUp & getColorPieces(!white) & ~FILE_A);
+    if(white)
+    {
+        generatedMoves |= (leftUp & (getColorPieces(!white) | enPassantTarget) & ~FILE_H) | (rightUp & (getColorPieces(!white) | enPassantTarget) & ~FILE_A);
+    }
+    else
+    {
+        generatedMoves |= (leftUp & (getColorPieces(!white) | enPassantTarget) & ~FILE_A) | (rightUp & (getColorPieces(!white) | enPassantTarget) & ~FILE_H);
+    }
 
     generatedMoves |= nextTile & (~getAllPieces());
 
@@ -292,9 +302,9 @@ uint64_t Board::GenerateBishopMoves(bool white, uint64_t selectedTile)
 uint64_t Board::generateMoves(uint64_t selectedTile, uint64_t selectedPiece, uint64_t selectedTileX, uint64_t selectedTileY)
 {
     bool white = selectedPiece < 6 ? false : true;
-    std::cout << "Start of move generation " << white << "\n";
+    //std::cout << "Start of move generation " << white << "\n";
     generatedMoves = 0;
-    PrintBoard(selectedTile);
+    //PrintBoard(selectedTile);
 
     switch (selectedPiece)
     {
@@ -360,9 +370,9 @@ uint64_t Board::generateMoves(uint64_t selectedTile, uint64_t selectedPiece, uin
         break;
     }
 
-    std::cout << "Moves were generated for piece: " << selectedPiece << "\n";
+    //std::cout << "Moves were generated for piece: " << selectedPiece << "\n";
     //PrintBoard(generatedMoves);
-    std::cout << "End of move generation\n";
+    //std::cout << "End of move generation\n";
     return generatedMoves;
 }
 
@@ -438,10 +448,12 @@ uint64_t Board::getCheckedTiles(bool white)
 }
 
 // TOOD CHECK FOR CHECKMATE
-uint64_t Board::getLegalMoves(bool white)
+uint64_t Board::getLegalMoves(bool white, uint64_t selectedTile, int selectedPiece)
 {
     uint64_t legalMoves = 0;
-    uint64_t generated = generatedMoves;
+    int tileX = 7 - (std::__countr_zero(selectedTile) % 8);
+    int tileY = 7 - (std::__countr_zero(selectedTile) / 8);
+    uint64_t generated = generateMoves(selectedTile, selectedPiece, tileX, tileY);
 
     int min = white ? 6 : 0;
     int max = white ? 11 : 5;
@@ -464,19 +476,18 @@ uint64_t Board::getLegalMoves(bool white)
         }
 
         uint64_t checks = copyBoard.getCheckedTiles(!white);
-        std::cout << "Current \n";
+        /*std::cout << "Current \n";
         PrintBoard(currentTile);
          std::cout << "Selected \n";
         PrintBoard(selectedTile);
-        std::cout << "ASD \n";
         PrintBoard(copyBoard.bitboards[selectedPiece]);
         std::cout << "Checks\n";
         PrintBoard(checks);
         std::cout << "All\n";
-        PrintBoard(copyBoard.getAllPieces());
+        PrintBoard(copyBoard.getAllPieces());*/
         if(checks & copyBoard.bitboards[max - 4])
         {
-            std::cout << "Move is illegal\n";
+            //std::cout << "Move is illegal\n";
         }
         else
         {
@@ -517,13 +528,10 @@ uint64_t Board::getAllLegalMoves(bool white)
         if(currentPiece == 12)
             continue;
 
-        int tileX = 7 - (std::__countr_zero(selectedTile) % 8);
-        int tileY = 7 - (std::__countr_zero(selectedTile) / 8);
-
         Board copyBoard = *this;
 
-        uint64_t generated = copyBoard.generateMoves(selectedTile, currentPiece, tileX, tileY);
-        while(generated)
+        //uint64_t generated = copyBoard.generateMoves(selectedTile, currentPiece, tileX, tileY);
+        /*while(generated)
         {
             uint64_t currentTile = (static_cast<uint64_t>(1) << std::__countr_zero(generated));
             copyBoard.bitboards[currentPiece] |= currentTile;
@@ -535,15 +543,9 @@ uint64_t Board::getAllLegalMoves(bool white)
             }
 
             uint64_t checks = copyBoard.getCheckedTiles(!white);
-            /*std::cout << "Current \n";
-            PrintBoard(currentTile);
-            std::cout << "Checks\n";
-            PrintBoard(checks);
-            std::cout << "All\n";
-            PrintBoard(copyBoard.getAllPieces());*/
             if(checks & copyBoard.bitboards[max - 4])
             {
-                std::cout << "Move is illegal\n";
+                //std::cout << "Move is illegal\n";
             }
             else
             {
@@ -551,8 +553,8 @@ uint64_t Board::getAllLegalMoves(bool white)
             }
 
             generated &= (generated - 1);
-        }
-
+        }*/
+       legalMoves |= copyBoard.getLegalMoves(white, selectedTile, currentPiece);
     }
 
     return legalMoves;

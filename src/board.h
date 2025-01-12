@@ -23,6 +23,8 @@ public:
     bool castleQueenW = false;
     bool castleKingW = false;
     uint64_t halfmove;
+    std::string halfmoveText;
+    std::string fullmoveText;
     uint64_t fullmove;
 
     // input //
@@ -48,7 +50,7 @@ public:
     
     uint64_t getCheckedTiles(bool white);
     uint64_t legalMoves;
-    uint64_t getLegalMoves(bool white);
+    uint64_t getLegalMoves(bool white, uint64_t selectedTile, int selectedPiece);
     uint64_t getAllLegalMoves(bool white);
 
     const uint64_t FILE_A = 0x8080808080808080ULL;

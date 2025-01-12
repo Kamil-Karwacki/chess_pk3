@@ -4,7 +4,7 @@
 #include "input.h"
 #include "debug.h"
 
-std::array<sf::Sprite, 12> initTextures()
+LinkedList<sf::Sprite> initTextures()
 {
     sf::Texture *piecesTexture = new sf::Texture();
     if(!piecesTexture->loadFromFile("../../img/ChessPiecesArray.png"))
@@ -12,27 +12,31 @@ std::array<sf::Sprite, 12> initTextures()
         throw std::runtime_error("Error: Cant open chesspieces file\n");
     }
 
-    std::array<sf::Sprite, 12> sprites;
+    LinkedList<sf::Sprite> sprites;
 
-    sprites[0] = sf::Sprite(*piecesTexture, sf::IntRect(0, 0, 60, 60));
-    sprites[1] = sf::Sprite(*piecesTexture, sf::IntRect(60, 0, 60, 60));
-    sprites[2] = sf::Sprite(*piecesTexture, sf::IntRect(120, 0, 60, 60));
-    sprites[3] = sf::Sprite(*piecesTexture, sf::IntRect(180, 0, 60, 60));
-    sprites[4] = sf::Sprite(*piecesTexture, sf::IntRect(240, 0, 60, 60));
-    sprites[5] = sf::Sprite(*piecesTexture, sf::IntRect(300, 0, 60, 60));
+    sprites.pushBack(sf::Sprite(*piecesTexture, sf::IntRect(0, 0, 60, 60)));
+    sprites.pushBack(sf::Sprite(*piecesTexture, sf::IntRect(60, 0, 60, 60)));
+    sprites.pushBack(sf::Sprite(*piecesTexture, sf::IntRect(120, 0, 60, 60)));
+    sprites.pushBack(sf::Sprite(*piecesTexture, sf::IntRect(180, 0, 60, 60)));
+    sprites.pushBack(sf::Sprite(*piecesTexture, sf::IntRect(240, 0, 60, 60)));
+    sprites.pushBack(sf::Sprite(*piecesTexture, sf::IntRect(300, 0, 60, 60)));
 
-    sprites[6] = sf::Sprite(*piecesTexture, sf::IntRect(0, 60, 60, 60));
-    sprites[7] = sf::Sprite(*piecesTexture, sf::IntRect(60, 60, 60, 60));
-    sprites[8] = sf::Sprite(*piecesTexture, sf::IntRect(120, 60, 60, 60));
-    sprites[9] = sf::Sprite(*piecesTexture, sf::IntRect(180, 60, 60, 60));
-    sprites[10] = sf::Sprite(*piecesTexture, sf::IntRect(240, 60, 60, 60));
-    sprites[11] = sf::Sprite(*piecesTexture, sf::IntRect(300, 60, 60, 60));
+    sprites.pushBack(sf::Sprite(*piecesTexture, sf::IntRect(0, 60, 60, 60)));
+    sprites.pushBack(sf::Sprite(*piecesTexture, sf::IntRect(60, 60, 60, 60)));
+    sprites.pushBack(sf::Sprite(*piecesTexture, sf::IntRect(120, 60, 60, 60)));
+    sprites.pushBack(sf::Sprite(*piecesTexture, sf::IntRect(180, 60, 60, 60)));
+    sprites.pushBack(sf::Sprite(*piecesTexture, sf::IntRect(240, 60, 60, 60)));
+    sprites.pushBack(sf::Sprite(*piecesTexture, sf::IntRect(300, 60, 60, 60)));
+
+    if (!font.loadFromFile("../../img/Arial.ttf"))
+    {
+        throw std::runtime_error("Error: Cant open font\n");
+    }
 
     return sprites;
-
 }
 
-void draw(sf::RenderWindow& window, std::array<sf::Sprite, 12> sprites)
+void draw(sf::RenderWindow& window, LinkedList<sf::Sprite> sprites)
 {
     drawCheckboard(window);
     for(int j = 0; j < 12; j++)
@@ -49,7 +53,73 @@ void draw(sf::RenderWindow& window, std::array<sf::Sprite, 12> sprites)
             }
         }
     }
-    
+
+    if(displayPromotion)
+    {
+        int min = whitePromoting ? 6 : 0;
+        int max = whitePromoting ? 11 : 5;
+        int offset = whitePromoting ? 1 : -1;
+
+        sf::RectangleShape square(sf::Vector2f(canvasSize.x / 8, canvasSize.y / 2));
+        if(whitePromoting)
+            square.setPosition(sf::Vector2f(canvasSize.x * promotionPos.x / 8, canvasSize.y * (promotionPos.y + 1 * offset) / 8));
+        else
+            square.setPosition(sf::Vector2f(canvasSize.x * promotionPos.x / 8, canvasSize.y - canvasSize.y * (promotionPos.y + 1 * offset) / 8));
+
+        square.setFillColor(sf::Color(135, 201, 249));
+        window.draw(square);
+
+        sprites[max - 1].setPosition(sf::Vector2f((promotionPos.x) * pieceSize.x, (promotionPos.y + 1 * offset) * pieceSize.y));
+        window.draw(sprites[max - 1]);
+        sprites[max - 2].setPosition(sf::Vector2f((promotionPos.x) * pieceSize.x, (promotionPos.y + 2 * offset) * pieceSize.y));
+        window.draw(sprites[max - 2]);
+        sprites[max - 3].setPosition(sf::Vector2f((promotionPos.x) * pieceSize.x, (promotionPos.y + 3 * offset) * pieceSize.y));
+        window.draw(sprites[max - 3]);
+        sprites[max - 5].setPosition(sf::Vector2f((promotionPos.x) * pieceSize.x, (promotionPos.y + 4 * offset) * pieceSize.y));
+        window.draw(sprites[max - 5]);
+    }
+
+    if(checkmate)
+    {
+        sf::Text text;
+
+        text.setFont(font);
+
+        std::string displayText = winner + " has won!";
+
+        text.setString(displayText);
+
+        text.setCharacterSize(pieceSize.x);
+
+        text.setOutlineColor(sf::Color(255,255,255,255));
+        text.setOutlineThickness(4);
+        text.setFillColor(sf::Color(0,0,0,255));
+
+        text.setPosition(canvasSize.x / 2, canvasSize.y / 2);
+
+        window.draw(text);
+    }
+
+    if(resultDraw)
+    {
+        sf::Text text;
+
+        text.setFont(font);
+
+        std::string displayText = "DRAW!";
+
+        text.setString(displayText);
+
+        text.setCharacterSize(pieceSize.x);
+
+        text.setOutlineColor(sf::Color(255,255,255,255));
+        text.setOutlineThickness(4);
+        text.setFillColor(sf::Color(0,0,0,255));
+
+        text.setPosition(canvasSize.x / 2, canvasSize.y / 2);
+
+        window.draw(text);
+    }
 }
 
 void drawCheckboard(sf::RenderWindow& window)

@@ -2,11 +2,12 @@
 #include "render.h"
 #include "input.h"
 
+
 int main()
 {
     auto window = sf::RenderWindow({640u, 480u}, "Szachy");
 
-    std::array<sf::Sprite, 12> sprites = initTextures();
+    LinkedList<sf::Sprite> linkedSprites = initTextures();
 
     window.setFramerateLimit(60);
 
@@ -44,7 +45,7 @@ int main()
 
         window.clear();
 
-        draw(window, sprites);
+        draw(window, linkedSprites);
         
         window.display();
     }
