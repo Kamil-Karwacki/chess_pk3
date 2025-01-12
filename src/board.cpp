@@ -9,7 +9,7 @@
 
 Board::Board()
 {
-    loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 48 1");
+    loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     //loadFEN("4kb1r/p4ppp/4q3/8/8/1B6/PPP2PPP/2KR4");
     GenerateKingMoves();
     GenerateKnightMoves();
