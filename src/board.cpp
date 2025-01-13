@@ -323,15 +323,15 @@ uint64_t Board::generateMoves(uint64_t selectedTile, uint64_t selectedPiece, uin
         uint64_t allPieces = getAllPieces();
         uint64_t illegalTiles = attackedTiles | allPieces;
 
-        uint64_t kingSideTiles[] = {(selectedTile >> 1), (selectedTile >> 2)};
+        uint64_t kingSideTiles[] = {(selectedTile), (selectedTile >> 1), (selectedTile >> 2)};
         bool castleKing = white ? castleKingW : castleKingB;
-        if(kingSideTiles[0] & ~illegalTiles && kingSideTiles[1] & ~illegalTiles && castleKing)
+        if(kingSideTiles[0] & ~illegalTiles && kingSideTiles[1] & ~illegalTiles && kingSideTiles[2] & ~illegalTiles  && castleKing)
         {
             std::cout << "King can castle king side" << "\n";
             generatedMoves |= kingSideTiles[1];
         }
 
-        uint64_t queenSideTiles[] = {(selectedTile << 1), (selectedTile << 2), (selectedTile << 3)};
+        uint64_t queenSideTiles[] = {(selectedTile), (selectedTile << 1), (selectedTile << 2)};
         bool castleQueen = white ? castleQueenW : castleQueenB;
 
         if(queenSideTiles[0] & ~illegalTiles && queenSideTiles[1] & ~illegalTiles && queenSideTiles[2] & ~illegalTiles && castleQueen)
