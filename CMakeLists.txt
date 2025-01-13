@@ -13,9 +13,10 @@ FetchContent_Declare(SFML
     SYSTEM)
 FetchContent_MakeAvailable(SFML)
 
-add_executable(main src/main.cpp src/render.cpp src/render.h src/board.cpp src/board.h)
+add_executable(main src/main.cpp src/render.cpp src/render.h src/board.cpp src/board.h src/input.cpp src/input.h src/debug.h src/debug.cpp src/lista.h)
 target_link_libraries(main PRIVATE sfml-graphics)
 target_compile_features(main PRIVATE cxx_std_17)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++ -static")
 
 if(WIN32)
     add_custom_command(
